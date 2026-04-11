@@ -16,7 +16,7 @@ static const int button_mapping[] =
 	BTN_TL, BTN_TR,
 	BTN_THUMBL, BTN_THUMBR,
 	BTN_START, BTN_SELECT,
-	BTN_MODE,
+	//BTN_MODE, Causes too much annoyance and confusion when this is piped through.
 };
 
 VirtualGamepad::VirtualGamepad()
