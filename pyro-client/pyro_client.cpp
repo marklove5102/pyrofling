@@ -379,6 +379,11 @@ static bool video_codec_is_self_recovering(const pyro_codec_parameters &codec)
 	return codec.video_codec == PYRO_VIDEO_CODEC_PYROWAVE;
 }
 
+void PyroStreamClient::flush_packet_queue()
+{
+	while (udp.read_thread_packet(nullptr, 0) != 0);
+}
+
 bool PyroStreamClient::iterate()
 {
 	Packet payload;

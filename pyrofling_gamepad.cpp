@@ -174,10 +174,6 @@ int main(int argc, char **argv)
 
 	while (!handler.dead)
 	{
-		std::this_thread::sleep_for(std::chrono::milliseconds(4));
-		pad.update(tracker);
-		tracker.dispatch_current_state(0.0, &handler);
-
 		SDL_Event e;
 		while (SDL_PollEvent(&e))
 		{
@@ -185,6 +181,15 @@ int main(int argc, char **argv)
 				handler.dead = true;
 			pad.process_sdl_event(e, tracker, dispatcher);
 		}
+
+		pad.update(tracker);
+		tracker.dispatch_current_state(0.0, &handler);
+
+		std::this_thread::sleep_for(std::chrono::milliseconds(4));
+
+		// We don't read packets, so just flush all messages
+		// so the queue doesn't clog up.
+		pyro.flush_packet_queue();
 	}
 
 #ifdef _WIN32

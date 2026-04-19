@@ -26,6 +26,7 @@ Socket::~Socket()
 		{
 			std::lock_guard<std::mutex> holder{lock};
 			ring.read_count = ring.write_count;
+			ring.dead = true;
 			cond.notify_one();
 		}
 
@@ -164,8 +165,11 @@ void Socket::recv_thread()
 			std::unique_lock<std::mutex> holder{lock};
 			cond.wait(holder, [this]() {
 				uint32_t queued = ring.write_count - ring.read_count;
-				return queued < ring.packets.size();
+				return queued < ring.packets.size() || ring.dead;
 			});
+
+			if (ring.dead)
+				break;
 		}
 
 		auto &packet = ring.packets[ring.write_count & mask];
@@ -191,6 +195,11 @@ size_t Socket::read_thread_packet(void *data, size_t size)
 
 	{
 		std::unique_lock<std::mutex> holder{lock};
+
+		// This functions more like a flush input queue.
+		if (ring.write_count == ring.read_count && !data)
+			return 0;
+
 		auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(5);
 		if (!cond.wait_until(holder, deadline, [this]() {
 			return ring.dead || ring.write_count != ring.read_count; }))
@@ -207,7 +216,8 @@ size_t Socket::read_thread_packet(void *data, size_t size)
 	auto &packet = ring.packets[ring.read_count & (ring.packets.size() - 1)];
 
 	size = std::min<size_t>(size, packet.size);
-	memcpy(data, packet.data.get(), size);
+	if (data)
+		memcpy(data, packet.data.get(), size);
 
 	std::lock_guard<std::mutex> holder{lock};
 	ring.read_count++;

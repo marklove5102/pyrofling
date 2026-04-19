@@ -48,6 +48,7 @@ public:
 
 	const pyro_codec_parameters &get_codec_parameters() const;
 	bool wait_next_packet();
+	void flush_packet_queue();
 
 	const void *get_packet_data() const;
 	size_t get_packet_size() const;
